@@ -47,7 +47,7 @@ locals {
   sqs_queues = {
     "test-bucket-01" = {
       name = "test-queue-01",
-      fifo = true
+      fifo = false
     },
     "test-bucket-02" = {
       name = "test-queue-02",
@@ -57,7 +57,7 @@ locals {
   sns_topics = {
     "test-bucket-01" = {
       name = "test-topic-01",
-      fifo = true
+      fifo = false
     },
     "test-bucket-02" = {
       name = "test-topic-02",
