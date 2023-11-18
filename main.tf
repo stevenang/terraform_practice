@@ -72,11 +72,21 @@ module "create_s3_buckets" {
   bucket_name = each.value
 }
 
+module create_sqs_dlq {
+  source     = "./modules/sqs"
+  for_each   = local.sqs_queues
+  queue_name = each.value.name
+  fifo_queue = each.value.fifo
+  is_dlq     = true
+}
+
 module "create_sqs_queue" {
   source     = "./modules/sqs"
   for_each   = local.sqs_queues
   queue_name = each.value.name
   fifo_queue = each.value.fifo
+  dlq_arn    = module.create_sqs_dlq[each.key].queue_arn
+  is_dlq     = false
 }
 
 module "create_sns_topics" {

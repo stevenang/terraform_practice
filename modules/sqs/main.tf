@@ -1,13 +1,14 @@
-resource "aws_sqs_queue" "this" {
-  name       = var.fifo_queue ? "${var.queue_name}.fifo" : var.queue_name
-  fifo_queue = var.fifo_queue
+locals {
+  queue_name = var.fifo_queue ? "${var.queue_name}.fifo" : var.queue_name
+  dlq_name = var.fifo_queue ? "${var.queue_name}-dlq.fifo" : "${var.queue_name}-dlq"
 }
 
-resource "aws_sqs_queue" "dead_letter_queue" {
-  name = "${var.queue_name}-dead-letter"
-  redrive_allow_policy = jsonencode({
-    redrivePermission = "byQueue",
-    sourceQueueArns   = [aws_sqs_queue.this.arn]
+resource "aws_sqs_queue" "this" {
+  name       = var.is_dlq ? local.dlq_name : local.queue_name
+  fifo_queue = var.fifo_queue
+  redrive_policy = var.is_dlq ? null : jsonencode({
+    deadLetterTargetArn = var.dlq_arn
+    maxReceiveCount     = var.max_receive_count
   })
 }
 
