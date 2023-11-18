@@ -42,43 +42,62 @@ provider "aws" {
   }
 }
 
-module "test_s3_bucket-01" {
-  source      = "./modules/s3"
-  bucket_name = "test-bucket-01"
-  topic_arn   = module.test_sns_topic-01.sns_topic_arn
+locals {
+  s3_bucket_names = ["test-bucket-01", "test-bucket-02"]
+  sqs_queues = {
+    "test-bucket-01" = {
+      name = "test-queue-01",
+      fifo = true
+    },
+    "test-bucket-02" = {
+      name = "test-queue-02",
+      fifo = false
+    }
+  }
+  sns_topics = {
+    "test-bucket-01" = {
+      name = "test-topic-01",
+      fifo = true
+    },
+    "test-bucket-02" = {
+      name = "test-topic-02",
+      fifo = false
+    }
+  }
 }
 
-module "test_sqs_queue-01" {
+module "create_s3_buckets" {
+  source      = "./modules/s3_bucket"
+  for_each    = toset(local.s3_bucket_names)
+  bucket_name = each.value
+}
+
+module "create_sqs_queue" {
   source     = "./modules/sqs"
-  queue_name = "test-queue-01"
-  fifo_queue = true
+  for_each   = local.sqs_queues
+  queue_name = each.value.name
+  fifo_queue = each.value.fifo
 }
 
-module "test_sns_topic-01" {
-  source                 = "./modules/sns"
-  topic_name             = "test-topic-01"
-  s3_bucket_arn          = module.test_s3_bucket-01.bucket_arn
-  fifo                   = true
+module "create_sns_topics" {
+  source     = "./modules/sns"
+  for_each   = local.sns_topics
+  topic_name = each.value.name
+  fifo       = each.value.fifo
+}
+
+module "create_sns_topic_subscriptions" {
+  source                 = "./modules/sns_topic_subscriptions"
+  for_each               = local.sns_topics
+  s3_bucket_arn          = module.create_s3_buckets[each.key].bucket_arn
+  sns_topic_arn          = module.create_sns_topics[each.key].sns_topic_arn
   subscription_protocols = ["sqs"]
-  subscription_endpoints = [module.test_sqs_queue-01.queue_arn]
+  subscription_endpoints = [module.create_sqs_queue[each.key].queue_arn]
 }
 
-module "test_s3_bucket-02" {
-  source      = "./modules/s3"
-  bucket_name = "test-bucket-02"
-  topic_arn   = module.test_sns_topic-02.sns_topic_arn
-}
-
-module "test_sqs_queue-02" {
-  source     = "./modules/sqs"
-  queue_name = "test-queue-02"
-}
-
-module "test_sns_topic-02" {
-  source                 = "./modules/sns"
-  topic_name             = "test-topic-02"
-  s3_bucket_arn          = module.test_s3_bucket-02.bucket_arn
-  subscription_protocols = ["sqs"]
-  subscription_endpoints = [module.test_sqs_queue-02.queue_arn]
-}
-
+module "create_s3_notifications" {
+  source    = "./modules/s3_notification"
+  for_each  = toset(local.s3_bucket_names)
+  bucket_id = module.create_s3_buckets[each.value].bucket_id
+  topic_arn = module.create_sns_topics[each.value].sns_topic_arn
+} 
