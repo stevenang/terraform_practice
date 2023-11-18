@@ -4,5 +4,5 @@ variable "bucket_name" {
 }
 
 variable "topic_arn" {
-    type        = string
+  type = string
 }

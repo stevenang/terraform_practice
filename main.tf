@@ -49,16 +49,16 @@ module "test_s3_bucket-01" {
 }
 
 module "test_sqs_queue-01" {
-  source      = "./modules/sqs"
-  queue_name  = "test-queue-01"
-  fifo_queue  = true
+  source     = "./modules/sqs"
+  queue_name = "test-queue-01"
+  fifo_queue = true
 }
 
 module "test_sns_topic-01" {
-  source        = "./modules/sns"
-  topic_name    = "test-topic-01"
-  s3_bucket_arn = module.test_s3_bucket-01.bucket_arn
-  fifo = true
+  source                 = "./modules/sns"
+  topic_name             = "test-topic-01"
+  s3_bucket_arn          = module.test_s3_bucket-01.bucket_arn
+  fifo                   = true
   subscription_protocols = ["sqs"]
   subscription_endpoints = [module.test_sqs_queue-01.queue_arn]
 }
@@ -70,14 +70,14 @@ module "test_s3_bucket-02" {
 }
 
 module "test_sqs_queue-02" {
-  source      = "./modules/sqs"
-  queue_name  = "test-queue-02"
+  source     = "./modules/sqs"
+  queue_name = "test-queue-02"
 }
 
 module "test_sns_topic-02" {
-  source        = "./modules/sns"
-  topic_name    = "test-topic-02"
-  s3_bucket_arn = module.test_s3_bucket-02.bucket_arn
+  source                 = "./modules/sns"
+  topic_name             = "test-topic-02"
+  s3_bucket_arn          = module.test_s3_bucket-02.bucket_arn
   subscription_protocols = ["sqs"]
   subscription_endpoints = [module.test_sqs_queue-02.queue_arn]
 }
